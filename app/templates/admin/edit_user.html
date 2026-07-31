@@ -1,0 +1,44 @@
+{% extends "layouts/base.html" %}
+{% block title %}Edit User — Admin{% endblock %}
+{% block page_title %}Edit User: {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="card form-card">
+  <div class="card-body">
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" class="form-control" value="{{ user.username }}" disabled>
+      </div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" class="form-control" value="{{ user.email }}">
+      </div>
+      <div class="form-group">
+        <label for="new_password">New Password</label>
+        <input type="password" id="new_password" name="new_password" class="form-control" placeholder="Leave blank to keep current">
+      </div>
+      <div class="form-group">
+        <label>Roles</label>
+        {% for r in all_roles %}
+        <label class="checkbox-item">
+          <input type="checkbox" name="roles" value="{{ r.name }}" {% if r in user.roles %}checked{% endif %}>
+          <span>{{ r.name|title }} <small class="text-muted">— {{ r.description }}</small></span>
+        </label>
+        {% endfor %}
+      </div>
+      <div class="form-group">
+        <label class="checkbox-item">
+          <input type="checkbox" name="is_active" {% if user.is_active %}checked{% endif %}>
+          <span>Active</span>
+        </label>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="{{ url_for('admin.users') }}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends "layouts/base.html" %}
+{% block title %}{{ patch.title }} — Patch Prioritization{% endblock %}
+{% block page_title %}Patch Detail{% endblock %}
+
+{% block help_content %}
+<h4>Patch Detail</h4>
+<p>View complete patch information and run AI analysis.</p>
+<ul>
+  <li><strong>Analyze</strong> — Runs the Kindo AI agent to score this patch based on exploitability, asset criticality, exposure, and operational impact</li>
+  <li><strong>Enrich</strong> — Fetches additional threat intelligence and context</li>
+  <li><strong>Findings</strong> — AI-generated findings with severity, evidence, and recommendations</li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<div class="page-actions">
+  <a href="{{ url_for('patches.list_patches') }}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
+  <div class="btn-group">
+    {% if current_user.has_any_role('admin', 'analyst') %}
+    <a href="{{ url_for('patches.edit_patch', patch_id=patch.id) }}" class="btn btn-outline"><i class="fas fa-edit"></i> Edit</a>
+    {% if agent_configured %}
+    <button class="btn btn-primary" id="analyzeBtn" onclick="analyzePatch({{ patch.id }})"><i class="fas fa-robot"></i> Analyze</button>
+    <button class="btn btn-outline" id="enrichBtn" onclick="enrichPatch({{ patch.id }})"><i class="fas fa-magnifying-glass-chart"></i> Enrich</button>
+    {% endif %}
+    {% endif %}
+    {% if current_user.has_role('admin') %}
+    <form method="POST" action="{{ url_for('patches.delete_patch', patch_id=patch.id) }}" style="display:inline" onsubmit="return confirm('Delete this patch?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Delete</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div class="card">
+    <div class="card-header"><h3><i class="fas fa-info-circle"></i> Details</h3></div>
+    <div class="card-body">
+      <table class="table table-details">
+        <tr><th>Title</th><td>{{ patch.title }}</td></tr>
+        <tr><th>Vendor</th><td>{{ patch.vendor or '—' }}</td></tr>
+        <tr><th>Vendor Patch ID</th><td class="text-mono">{{ patch.patch_id_vendor or '—' }}</td></tr>
+        <tr><th>CVE IDs</th><td class="text-mono">{{ patch.cve_ids or '—' }}</td></tr>
+        <tr><th>Release Date</th><td>{{ patch.release_date.strftime('%B %d, %Y') if patch.release_date else '—' }}</td></tr>
+        <tr><th>Vendor Severity</th><td><span class="badge badge-{{ patch.severity_vendor or 'unknown' }}">{{ (patch.severity_vendor or '—')|upper }}</span></td></tr>
+        <tr><th>CVSS Score</th><td>{{ '%.1f'|format(patch.cvss_score) if patch.cvss_score else '—' }}</td></tr>
+        <tr><th>EPSS Score</th><td>{{ '%.4f'|format(patch.epss_score) if patch.epss_score else '—' }}</td></tr>
+        <tr><th>Exploitability</th><td><span class="badge badge-{{ patch.exploitability }}">{{ patch.exploitability|upper }}</span></td></tr>
+        <tr><th>Status</th><td><span class="badge badge-outline">{{ patch.status }}</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3><i class="fas fa-chart-bar"></i> Priority Assessment</h3></div>
+    <div class="card-body">
+      {% if patch.priority_score is not none %}
+      <div class="priority-display">
+        <div class="priority-score">
+          <span class="score-value">{{ '%.1f'|format(patch.priority_score) }}</span>
+          <span class="score-label">Priority Score</span>
+        </div>
+        <div class="risk-badge-lg">
+          <span class="badge badge-{{ patch.risk_level or 'unknown' }} badge-lg">{{ (patch.risk_level or 'N/A')|upper }}</span>
+        </div>
+      </div>
+      {% if patch.ai_summary %}
+      <div class="ai-summary">
+        <h4>AI Summary</h4>
+        <p>{{ patch.ai_summary }}</p>
+      </div>
+      {% endif %}
+      {% else %}
+      <div class="empty-state">
+        <i class="fas fa-robot"></i>
+        <p>No analysis yet.{% if agent_configured and current_user.has_any_role('admin', 'analyst') %} Click <strong>Analyze</strong> to run AI scoring.{% endif %}</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if patch.description %}
+<div class="card">
+  <div class="card-header"><h3><i class="fas fa-file-lines"></i> Description</h3></div>
+  <div class="card-body"><p>{{ patch.description }}</p></div>
+</div>
+{% endif %}
+
+{% if patch.affected_assets %}
+<div class="card">
+  <div class="card-header"><h3><i class="fas fa-server"></i> Affected Assets ({{ patch.affected_assets|length }})</h3></div>
+  <div class="card-body no-padding">
+    <table class="table">
+      <thead><tr><th>Name</th><th>Hostname</th><th>Criticality</th><th>Environment</th><th>Exposure</th></tr></thead>
+      <tbody>
+        {% for a in patch.affected_assets %}
+        <tr>
+          <td><a href="{{ url_for('assets.view_asset', asset_id=a.id) }}">{{ a.name }}</a></td>
+          <td class="text-mono">{{ a.hostname or '—' }}</td>
+          <td><span class="badge badge-{{ a.criticality }}">{{ a.criticality|upper }}</span></td>
+          <td>{{ a.environment }}</td>
+          <td>{{ a.exposure }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if patch.ai_analysis %}
+<div class="card">
+  <div class="card-header"><h3><i class="fas fa-magnifying-glass"></i> AI Analysis Details</h3></div>
+  <div class="card-body">
+    <div id="analysisResult">
+      {% if patch.ai_analysis.findings %}
+      <h4>Findings</h4>
+      {% for f in patch.ai_analysis.findings %}
+      <div class="finding-card finding-{{ f.severity|default('medium') }}">
+        <div class="finding-header">
+          <span class="badge badge-{{ f.severity|default('medium') }}">{{ (f.severity|default('MEDIUM'))|upper }}</span>
+          <strong>{{ f.category|default('General') }}</strong>
+        </div>
+        <p>{{ f.description }}</p>
+        {% if f.evidence %}
+        <div class="finding-evidence">
+          <strong>Evidence:</strong>
+          <ul>{% for e in f.evidence %}<li>{{ e }}</li>{% endfor %}</ul>
+        </div>
+        {% endif %}
+        {% if f.recommendation %}
+        <div class="finding-recommendation"><strong>Recommendation:</strong> {{ f.recommendation }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+      {% endif %}
+
+      {% if patch.ai_analysis.recommendations %}
+      <h4>Recommendations</h4>
+      {% for r in patch.ai_analysis.recommendations %}
+      <div class="recommendation-card">
+        <span class="badge badge-outline">{{ r.priority|default('P3') }}</span>
+        <strong>{{ r.action }}</strong>
+        {% if r.rationale %}<p class="text-muted">{{ r.rationale }}</p>{% endif %}
+        {% if r.owner_role %}<small>Owner: {{ r.owner_role }}</small>{% endif %}
+      </div>
+      {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Loading modal for AI operations -->
+<div class="modal-overlay" id="aiModal" style="display:none">
+  <div class="modal-card">
+    <div class="modal-body text-center">
+      <div class="spinner"></div>
+      <h3 id="aiModalTitle">Analyzing...</h3>
+      <p id="aiModalDetail" class="text-muted">The AI agent is processing this patch. This may take a moment.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const csrfToken = '{{ csrf_token() }}';
+
+function analyzePatch(patchId) {
+  document.getElementById('aiModal').style.display = 'flex';
+  document.getElementById('aiModalTitle').textContent = 'Analyzing Patch...';
+  fetch(`/patches/${patchId}/analyze`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': csrfToken}
+  })
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('aiModal').style.display = 'none';
+    if (data.ok) { location.reload(); }
+    else { alert('Analysis failed: ' + (data.detail || data.error)); }
+  })
+  .catch(err => {
+    document.getElementById('aiModal').style.display = 'none';
+    alert('Error: ' + err.message);
+  });
+}
+
+function enrichPatch(patchId) {
+  document.getElementById('aiModal').style.display = 'flex';
+  document.getElementById('aiModalTitle').textContent = 'Enriching Patch...';
+  fetch(`/patches/${patchId}/enrich`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': csrfToken}
+  })
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('aiModal').style.display = 'none';
+    if (data.ok) { location.reload(); }
+    else { alert('Enrichment failed: ' + (data.detail || data.error)); }
+  })
+  .catch(err => {
+    document.getElementById('aiModal').style.display = 'none';
+    alert('Error: ' + err.message);
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "layouts/base.html" %}
+{% block title %}Tenants — Admin{% endblock %}
+{% block page_title %}Tenants{% endblock %}
+
+{% block help_content %}
+<h4>Tenant Management</h4>
+<p>View all organizations registered in the system. Each tenant has isolated data — users in one tenant cannot see patches, assets, or plans from another.</p>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body no-padding">
+    <table class="table">
+      <thead>
+        <tr><th>Name</th><th>Slug</th><th>Users</th><th>Created</th></tr>
+      </thead>
+      <tbody>
+        {% for t in tenants %}
+        <tr>
+          <td>{{ t.name }}</td>
+          <td class="text-mono">{{ t.slug }}</td>
+          <td>{{ t.users|length }}</td>
+          <td>{{ t.created_at.strftime('%b %d, %Y') if t.created_at else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

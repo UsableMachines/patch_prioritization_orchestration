@@ -1,0 +1,90 @@
+{% extends "layouts/base.html" %}
+{% block title %}{{ 'Edit Asset' if asset else 'New Asset' }} — Patch Prioritization{% endblock %}
+{% block page_title %}{{ 'Edit Asset' if asset else 'New Asset' }}{% endblock %}
+
+{% block help_content %}
+<h4>{{ 'Edit Asset' if asset else 'New Asset' }}</h4>
+<p>Define the asset's properties. Criticality, environment, and exposure directly influence patch priority scoring.</p>
+{% endblock %}
+
+{% block content %}
+<div class="card form-card">
+  <div class="card-body">
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-row">
+        <div class="form-group form-group-wide">
+          <label for="name">Name *</label>
+          <input type="text" id="name" name="name" class="form-control" required value="{{ asset.name if asset else '' }}">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="hostname">Hostname</label>
+          <input type="text" id="hostname" name="hostname" class="form-control" value="{{ asset.hostname if asset else '' }}">
+        </div>
+        <div class="form-group">
+          <label for="ip_address">IP Address</label>
+          <input type="text" id="ip_address" name="ip_address" class="form-control" value="{{ asset.ip_address if asset else '' }}">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="os_type">OS Type</label>
+          <input type="text" id="os_type" name="os_type" class="form-control" value="{{ asset.os_type if asset else '' }}" placeholder="Windows Server, Ubuntu, RHEL...">
+        </div>
+        <div class="form-group">
+          <label for="os_version">OS Version</label>
+          <input type="text" id="os_version" name="os_version" class="form-control" value="{{ asset.os_version if asset else '' }}">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="criticality">Criticality</label>
+          <select id="criticality" name="criticality" class="form-control">
+            {% for c in ['low','medium','high','critical'] %}
+            <option value="{{ c }}" {% if asset and asset.criticality == c %}selected{% endif %} {% if not asset and c == 'medium' %}selected{% endif %}>{{ c|title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="environment">Environment</label>
+          <select id="environment" name="environment" class="form-control">
+            {% for e in ['production','staging','dev','test'] %}
+            <option value="{{ e }}" {% if asset and asset.environment == e %}selected{% endif %} {% if not asset and e == 'production' %}selected{% endif %}>{{ e|title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="exposure">Exposure</label>
+          <select id="exposure" name="exposure" class="form-control">
+            {% for e in ['internal','dmz','external'] %}
+            <option value="{{ e }}" {% if asset and asset.exposure == e %}selected{% endif %} {% if not asset and e == 'internal' %}selected{% endif %}>{{ e|title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="business_unit">Business Unit</label>
+          <input type="text" id="business_unit" name="business_unit" class="form-control" value="{{ asset.business_unit if asset else '' }}">
+        </div>
+        <div class="form-group">
+          <label for="owner">Owner</label>
+          <input type="text" id="owner" name="owner" class="form-control" value="{{ asset.owner if asset else '' }}">
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">{{ 'Update Asset' if asset else 'Create Asset' }}</button>
+        <a href="{{ url_for('assets.list_assets') }}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

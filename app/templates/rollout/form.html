@@ -1,0 +1,65 @@
+{% extends "layouts/base.html" %}
+{% block title %}New Rollout Plan — Patch Prioritization{% endblock %}
+{% block page_title %}New Rollout Plan{% endblock %}
+
+{% block help_content %}
+<h4>Create Rollout Plan</h4>
+<p>Define a plan name, select patches to include, and optionally set a deployment window.</p>
+<p>Steps are auto-generated based on selected patches and their affected assets.</p>
+{% endblock %}
+
+{% block content %}
+<div class="card form-card">
+  <div class="card-body">
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label for="name">Plan Name *</label>
+        <input type="text" id="name" name="name" class="form-control" required placeholder="e.g., July 2026 Critical Patch Rollout">
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" class="form-control" rows="3"></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="schedule_start">Start Date</label>
+          <input type="datetime-local" id="schedule_start" name="schedule_start" class="form-control">
+        </div>
+        <div class="form-group">
+          <label for="schedule_end">End Date</label>
+          <input type="datetime-local" id="schedule_end" name="schedule_end" class="form-control">
+        </div>
+      </div>
+
+      {% if patches %}
+      <div class="form-group">
+        <label>Select Patches to Include</label>
+        <div class="checkbox-grid">
+          {% for p in patches %}
+          <label class="checkbox-item">
+            <input type="checkbox" name="patch_ids" value="{{ p.id }}">
+            <span>
+              {{ p.title|truncate(50) }}
+              {% if p.priority_score %}<span class="badge badge-{{ p.risk_level or 'unknown' }} badge-sm">{{ '%.0f'|format(p.priority_score) }}</span>{% endif %}
+              <small class="text-muted">({{ p.affected_assets|length }} assets)</small>
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% else %}
+      <div class="alert alert-info">No patches available. <a href="{{ url_for('patches.create_patch') }}">Add patches</a> first.</div>
+      {% endif %}
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Create Plan</button>
+        <a href="{{ url_for('rollout.list_plans') }}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

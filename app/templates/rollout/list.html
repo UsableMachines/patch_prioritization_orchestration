@@ -1,0 +1,56 @@
+{% extends "layouts/base.html" %}
+{% block title %}Rollout Plans — Patch Prioritization{% endblock %}
+{% block page_title %}Rollout Plans{% endblock %}
+
+{% block help_content %}
+<h4>Rollout Plans</h4>
+<p>Create and manage patch deployment plans. Plans go through a lifecycle:</p>
+<ol>
+  <li><strong>Draft</strong> — Plan is being prepared</li>
+  <li><strong>Approved</strong> — Admin has approved the plan for execution</li>
+  <li><strong>In Progress</strong> — Deployment is underway</li>
+  <li><strong>Completed</strong> — All steps have been executed</li>
+</ol>
+<p>Use <strong>Generate AI Plan</strong> to get intelligent deployment recommendations.</p>
+{% endblock %}
+
+{% block content %}
+<div class="page-actions">
+  <div></div>
+  {% if current_user.has_any_role('admin', 'analyst', 'operator') %}
+  <a href="{{ url_for('rollout.create_plan') }}" class="btn btn-primary"><i class="fas fa-plus"></i> New Plan</a>
+  {% endif %}
+</div>
+
+{% if plans %}
+<div class="card">
+  <div class="card-body no-padding">
+    <table class="table">
+      <thead>
+        <tr><th>Name</th><th>Status</th><th>Steps</th><th>Created</th><th>Created By</th></tr>
+      </thead>
+      <tbody>
+        {% for p in plans %}
+        <tr>
+          <td><a href="{{ url_for('rollout.view_plan', plan_id=p.id) }}">{{ p.name }}</a></td>
+          <td><span class="badge badge-outline">{{ p.status|replace('_', ' ')|title }}</span></td>
+          <td>{{ p.steps|length }}</td>
+          <td>{{ p.created_at.strftime('%b %d, %Y') if p.created_at else '—' }}</td>
+          <td>{{ p.created_by.username if p.created_by else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="empty-state-page">
+  <i class="fas fa-list-check"></i>
+  <h3>No Rollout Plans</h3>
+  <p>Create a rollout plan to orchestrate patch deployment across your assets.</p>
+  {% if current_user.has_any_role('admin', 'analyst', 'operator') %}
+  <a href="{{ url_for('rollout.create_plan') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Create Your First Plan</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

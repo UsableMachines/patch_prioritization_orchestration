@@ -1,0 +1,38 @@
+{% extends "layouts/base.html" %}
+{% block body_class %}page-login{% endblock %}
+{% block title %}Patch Prioritization & Orchestration{% endblock %}
+{% block content_unauth %}
+<div class="landing">
+  <div class="landing-hero">
+    <div class="landing-icon"><i class="fas fa-shield-halved"></i></div>
+    <h1>Patch Prioritization & Orchestration</h1>
+    <p>Rank patches by exploitability, asset criticality, exposure, and operational impact. Generate intelligent rollout plans powered by AI.</p>
+    <div class="landing-actions">
+      <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">Sign In</a>
+      <a href="{{ url_for('auth.register') }}" class="btn btn-outline btn-lg">Register</a>
+    </div>
+  </div>
+  <div class="landing-features">
+    <div class="feature-card">
+      <i class="fas fa-ranking-star"></i>
+      <h3>Risk-Based Ranking</h3>
+      <p>Score patches using CVSS, EPSS, exploitability, asset criticality, and network exposure.</p>
+    </div>
+    <div class="feature-card">
+      <i class="fas fa-robot"></i>
+      <h3>AI-Powered Analysis</h3>
+      <p>Leverage Kindo AI agents for deep patch analysis, enrichment, and rollout recommendations.</p>
+    </div>
+    <div class="feature-card">
+      <i class="fas fa-list-check"></i>
+      <h3>Rollout Orchestration</h3>
+      <p>Generate and manage deployment plans with step-by-step tracking and approval workflows.</p>
+    </div>
+    <div class="feature-card">
+      <i class="fas fa-building"></i>
+      <h3>Multi-Tenant RBAC</h3>
+      <p>Isolate organizations with role-based access control for admins, analysts, operators, and viewers.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

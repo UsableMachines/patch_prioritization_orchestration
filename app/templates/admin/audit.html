@@ -1,0 +1,31 @@
+{% extends "layouts/base.html" %}
+{% block title %}Audit Log — Admin{% endblock %}
+{% block page_title %}Audit Log{% endblock %}
+
+{% block help_content %}
+<h4>Audit Log</h4>
+<p>Complete history of actions taken in the system. Entries are automatically recorded for all create, update, delete, and AI analysis operations.</p>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body no-padding">
+    <table class="table">
+      <thead>
+        <tr><th>Time</th><th>User</th><th>Action</th><th>Type</th><th>Detail</th></tr>
+      </thead>
+      <tbody>
+        {% for l in logs %}
+        <tr>
+          <td>{{ l.created_at.strftime('%b %d, %H:%M') if l.created_at else '—' }}</td>
+          <td>{{ l.user.username if l.user else '—' }}</td>
+          <td>{{ l.action|replace('_', ' ')|title }}</td>
+          <td>{{ l.entity_type or '—' }}</td>
+          <td>{{ (l.detail or '—')|truncate(80) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

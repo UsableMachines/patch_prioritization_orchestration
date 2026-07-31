@@ -1,0 +1,163 @@
+{% extends "layouts/base.html" %}
+{% block title %}{{ plan.name }} — Patch Prioritization{% endblock %}
+{% block page_title %}Rollout Plan{% endblock %}
+
+{% block help_content %}
+<h4>Rollout Plan Detail</h4>
+<p>View and manage the deployment plan and its steps.</p>
+<ul>
+  <li><strong>Generate AI Plan</strong> — Uses the Kindo agent to create an optimized rollout schedule</li>
+  <li><strong>Approve</strong> — Admins can approve the plan for execution</li>
+  <li><strong>Step Status</strong> — Update each step as deployment progresses</li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<div class="page-actions">
+  <a href="{{ url_for('rollout.list_plans') }}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
+  <div class="btn-group">
+    {% if plan.status == 'draft' and current_user.has_any_role('admin', 'analyst') and agent_configured %}
+    <button class="btn btn-primary" id="generateBtn" onclick="generatePlan({{ plan.id }})"><i class="fas fa-robot"></i> Generate AI Plan</button>
+    {% endif %}
+    {% if plan.status == 'draft' and current_user.has_role('admin') %}
+    <form method="POST" action="{{ url_for('rollout.approve_plan', plan_id=plan.id) }}" style="display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-outline"><i class="fas fa-check"></i> Approve</button>
+    </form>
+    {% endif %}
+    {% if current_user.has_role('admin') %}
+    <form method="POST" action="{{ url_for('rollout.delete_plan', plan_id=plan.id) }}" style="display:inline" onsubmit="return confirm('Delete this plan?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Delete</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div class="card">
+    <div class="card-header"><h3><i class="fas fa-list-check"></i> {{ plan.name }}</h3></div>
+    <div class="card-body">
+      <table class="table table-details">
+        <tr><th>Status</th><td><span class="badge badge-outline">{{ plan.status|replace('_', ' ')|title }}</span></td></tr>
+        <tr><th>Created By</th><td>{{ plan.created_by.username if plan.created_by else '—' }}</td></tr>
+        {% if plan.approved_by %}<tr><th>Approved By</th><td>{{ plan.approved_by.username }}</td></tr>{% endif %}
+        <tr><th>Schedule</th><td>{{ plan.schedule_start.strftime('%b %d, %Y %H:%M') if plan.schedule_start else '—' }} → {{ plan.schedule_end.strftime('%b %d, %Y %H:%M') if plan.schedule_end else '—' }}</td></tr>
+        {% if plan.description %}<tr><th>Description</th><td>{{ plan.description }}</td></tr>{% endif %}
+      </table>
+    </div>
+  </div>
+
+  {% if plan.ai_plan %}
+  <div class="card">
+    <div class="card-header"><h3><i class="fas fa-robot"></i> AI-Generated Plan</h3></div>
+    <div class="card-body">
+      {% if plan.ai_plan.summary %}<p>{{ plan.ai_plan.summary }}</p>{% endif %}
+      {% if plan.ai_plan.recommendations %}
+      <h4>Recommendations</h4>
+      {% for r in plan.ai_plan.recommendations %}
+      <div class="recommendation-card">
+        <span class="badge badge-outline">{{ r.priority|default('P3') }}</span>
+        <strong>{{ r.action }}</strong>
+        {% if r.rationale %}<p class="text-muted">{{ r.rationale }}</p>{% endif %}
+      </div>
+      {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if plan.steps %}
+<div class="card">
+  <div class="card-header">
+    <h3><i class="fas fa-tasks"></i> Deployment Steps ({{ plan.steps|length }})</h3>
+  </div>
+  <div class="card-body no-padding">
+    <table class="table">
+      <thead>
+        <tr><th>#</th><th>Action</th><th>Patch</th><th>Asset</th><th>Status</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for step in plan.steps %}
+        <tr>
+          <td>{{ step.order + 1 }}</td>
+          <td>{{ step.action }}</td>
+          <td>{% if step.patch %}<a href="{{ url_for('patches.view_patch', patch_id=step.patch.id) }}">{{ step.patch.title|truncate(30) }}</a>{% else %}—{% endif %}</td>
+          <td>{% if step.asset %}<a href="{{ url_for('assets.view_asset', asset_id=step.asset.id) }}">{{ step.asset.name }}</a>{% else %}—{% endif %}</td>
+          <td>
+            <span class="badge badge-outline step-status-{{ step.status }}">{{ step.status|replace('_', ' ')|title }}</span>
+          </td>
+          <td>
+            {% if current_user.has_any_role('admin', 'operator') and plan.status in ('approved', 'in_progress') %}
+            <select class="form-control form-control-sm" onchange="updateStepStatus({{ plan.id }}, {{ step.id }}, this.value)" style="width:130px">
+              {% for s in ['pending','in_progress','completed','failed','skipped'] %}
+              <option value="{{ s }}" {% if step.status == s %}selected{% endif %}>{{ s|replace('_', ' ')|title }}</option>
+              {% endfor %}
+            </select>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body">
+    <div class="empty-state">
+      <i class="fas fa-tasks"></i>
+      <p>No deployment steps yet. Steps are created when you select patches during plan creation, or generated by the AI.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="modal-overlay" id="aiModal" style="display:none">
+  <div class="modal-card">
+    <div class="modal-body text-center">
+      <div class="spinner"></div>
+      <h3>Generating Rollout Plan...</h3>
+      <p class="text-muted">The AI agent is creating an optimized deployment schedule.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const csrfToken = '{{ csrf_token() }}';
+
+function generatePlan(planId) {
+  document.getElementById('aiModal').style.display = 'flex';
+  fetch(`/rollout/${planId}/generate`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': csrfToken}
+  })
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('aiModal').style.display = 'none';
+    if (data.ok) { location.reload(); }
+    else { alert('Generation failed: ' + (data.detail || data.error)); }
+  })
+  .catch(err => {
+    document.getElementById('aiModal').style.display = 'none';
+    alert('Error: ' + err.message);
+  });
+}
+
+function updateStepStatus(planId, stepId, status) {
+  fetch(`/rollout/${planId}/step/${stepId}/status`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+    body: JSON.stringify({status: status})
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (!data.ok) alert('Update failed: ' + (data.detail || data.error));
+  })
+  .catch(err => alert('Error: ' + err.message));
+}
+</script>
+{% endblock %}

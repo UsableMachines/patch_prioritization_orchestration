@@ -1,0 +1,34 @@
+{% extends "layouts/base.html" %}
+{% block body_class %}page-register{% endblock %}
+{% block title %}Register — Patch Prioritization{% endblock %}
+{% block content_unauth %}
+<div class="auth-card">
+  <div class="auth-logo">
+    <i class="fas fa-shield-halved"></i>
+    <h1>PatchPriority</h1>
+    <p>Create your account</p>
+  </div>
+  <form method="POST" class="auth-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-group">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" class="form-control" required autofocus>
+    </div>
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" class="form-control" required>
+    </div>
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" class="form-control" required minlength="6">
+    </div>
+    <div class="form-group">
+      <label for="tenant">Organization</label>
+      <input type="text" id="tenant" name="tenant" class="form-control" value="default" placeholder="default">
+      <small class="form-help">Enter your organization slug or leave as "default"</small>
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">Register</button>
+    <p class="auth-link">Already have an account? <a href="{{ url_for('auth.login') }}">Sign In</a></p>
+  </form>
+</div>
+{% endblock %}

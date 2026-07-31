@@ -1,0 +1,62 @@
+{% extends "layouts/base.html" %}
+{% block title %}{{ asset.name }} — Patch Prioritization{% endblock %}
+{% block page_title %}Asset Detail{% endblock %}
+
+{% block help_content %}
+<h4>Asset Detail</h4>
+<p>View the complete asset profile and its associated patches.</p>
+{% endblock %}
+
+{% block content %}
+<div class="page-actions">
+  <a href="{{ url_for('assets.list_assets') }}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
+  <div class="btn-group">
+    {% if current_user.has_any_role('admin', 'analyst', 'operator') %}
+    <a href="{{ url_for('assets.edit_asset', asset_id=asset.id) }}" class="btn btn-outline"><i class="fas fa-edit"></i> Edit</a>
+    {% endif %}
+    {% if current_user.has_role('admin') %}
+    <form method="POST" action="{{ url_for('assets.delete_asset', asset_id=asset.id) }}" style="display:inline" onsubmit="return confirm('Delete this asset?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Delete</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3><i class="fas fa-server"></i> {{ asset.name }}</h3></div>
+  <div class="card-body">
+    <table class="table table-details">
+      <tr><th>Hostname</th><td class="text-mono">{{ asset.hostname or '—' }}</td></tr>
+      <tr><th>IP Address</th><td class="text-mono">{{ asset.ip_address or '—' }}</td></tr>
+      <tr><th>OS</th><td>{{ asset.os_type or '—' }} {{ asset.os_version or '' }}</td></tr>
+      <tr><th>Criticality</th><td><span class="badge badge-{{ asset.criticality }}">{{ asset.criticality|upper }}</span></td></tr>
+      <tr><th>Environment</th><td>{{ asset.environment }}</td></tr>
+      <tr><th>Exposure</th><td>{{ asset.exposure }}</td></tr>
+      <tr><th>Business Unit</th><td>{{ asset.business_unit or '—' }}</td></tr>
+      <tr><th>Owner</th><td>{{ asset.owner or '—' }}</td></tr>
+    </table>
+  </div>
+</div>
+
+{% if asset.patches %}
+<div class="card">
+  <div class="card-header"><h3><i class="fas fa-download"></i> Associated Patches ({{ asset.patches|length }})</h3></div>
+  <div class="card-body no-padding">
+    <table class="table">
+      <thead><tr><th>Title</th><th>Vendor</th><th>Risk</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for p in asset.patches %}
+        <tr>
+          <td><a href="{{ url_for('patches.view_patch', patch_id=p.id) }}">{{ p.title|truncate(60) }}</a></td>
+          <td>{{ p.vendor or '—' }}</td>
+          <td><span class="badge badge-{{ p.risk_level or 'unknown' }}">{{ (p.risk_level or '—')|upper }}</span></td>
+          <td><span class="badge badge-outline">{{ p.status }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

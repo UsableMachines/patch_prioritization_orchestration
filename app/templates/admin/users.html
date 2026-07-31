@@ -1,0 +1,37 @@
+{% extends "layouts/base.html" %}
+{% block title %}Users — Admin{% endblock %}
+{% block page_title %}User Management{% endblock %}
+
+{% block help_content %}
+<h4>User Management</h4>
+<p>View and manage users in your organization. You can edit roles, disable accounts, and reset passwords.</p>
+<ul>
+  <li><strong>Admin</strong> — Full access including user management and approvals</li>
+  <li><strong>Analyst</strong> — Can create and analyze patches, generate plans</li>
+  <li><strong>Operator</strong> — Can execute rollout plans and update step statuses</li>
+  <li><strong>Viewer</strong> — Read-only access to all data</li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body no-padding">
+    <table class="table">
+      <thead>
+        <tr><th>Username</th><th>Email</th><th>Roles</th><th>Active</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>{{ u.username }}</td>
+          <td>{{ u.email }}</td>
+          <td>{% for r in u.roles %}<span class="badge badge-outline">{{ r.name }}</span> {% endfor %}</td>
+          <td>{% if u.is_active %}<span class="badge badge-low">Active</span>{% else %}<span class="badge badge-critical">Disabled</span>{% endif %}</td>
+          <td><a href="{{ url_for('admin.edit_user', user_id=u.id) }}" class="btn btn-sm btn-ghost"><i class="fas fa-edit"></i></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

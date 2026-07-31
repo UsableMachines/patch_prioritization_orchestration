@@ -1,0 +1,82 @@
+{% extends "layouts/base.html" %}
+{% block title %}Patches — Patch Prioritization{% endblock %}
+{% block page_title %}Patches{% endblock %}
+
+{% block help_content %}
+<h4>Patches List</h4>
+<p>This page shows all patches in your organization. You can:</p>
+<ul>
+  <li><strong>Filter</strong> by status or risk level using the dropdowns</li>
+  <li><strong>Sort</strong> — patches are sorted by priority score (highest first)</li>
+  <li><strong>Add</strong> new patches using the button in the top right</li>
+  <li><strong>Click</strong> any patch title to view details and run AI analysis</li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<div class="page-actions">
+  <div class="filter-bar">
+    <form method="GET" class="filter-form">
+      <select name="status" class="form-control form-control-sm" onchange="this.form.submit()">
+        <option value="">All Statuses</option>
+        {% for s in ['pending','analyzed','scheduled','deployed','verified','deferred'] %}
+        <option value="{{ s }}" {% if request.args.get('status') == s %}selected{% endif %}>{{ s|title }}</option>
+        {% endfor %}
+      </select>
+      <select name="risk_level" class="form-control form-control-sm" onchange="this.form.submit()">
+        <option value="">All Risk Levels</option>
+        {% for r in ['critical','high','medium','low','informational'] %}
+        <option value="{{ r }}" {% if request.args.get('risk_level') == r %}selected{% endif %}>{{ r|title }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+  {% if current_user.has_any_role('admin', 'analyst') %}
+  <a href="{{ url_for('patches.create_patch') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Patch</a>
+  {% endif %}
+</div>
+
+{% if patches %}
+<div class="card">
+  <div class="card-body no-padding">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Vendor</th>
+          <th>CVE(s)</th>
+          <th>CVSS</th>
+          <th>Score</th>
+          <th>Risk</th>
+          <th>Status</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in patches %}
+        <tr>
+          <td><a href="{{ url_for('patches.view_patch', patch_id=p.id) }}">{{ p.title|truncate(60) }}</a></td>
+          <td>{{ p.vendor or '—' }}</td>
+          <td class="text-mono">{{ (p.cve_ids or '—')|truncate(30) }}</td>
+          <td>{{ '%.1f'|format(p.cvss_score) if p.cvss_score else '—' }}</td>
+          <td>{{ '%.1f'|format(p.priority_score) if p.priority_score else '—' }}</td>
+          <td><span class="badge badge-{{ p.risk_level or 'unknown' }}">{{ (p.risk_level or '—')|upper }}</span></td>
+          <td><span class="badge badge-outline">{{ p.status }}</span></td>
+          <td>{{ p.created_at.strftime('%b %d') if p.created_at else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="empty-state-page">
+  <i class="fas fa-download"></i>
+  <h3>No Patches Found</h3>
+  <p>Add patches to begin prioritization and rollout planning.</p>
+  {% if current_user.has_any_role('admin', 'analyst') %}
+  <a href="{{ url_for('patches.create_patch') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Your First Patch</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

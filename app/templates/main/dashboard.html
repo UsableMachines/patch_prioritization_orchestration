@@ -1,0 +1,126 @@
+{% extends "layouts/base.html" %}
+{% block title %}Dashboard — Patch Prioritization{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block help_content %}
+<h4>Dashboard Overview</h4>
+<p>The dashboard provides a high-level view of your patch management posture.</p>
+<ul>
+  <li><strong>Summary Cards</strong> — Total patches, assets, plans, and critical items at a glance.</li>
+  <li><strong>Recent Patches</strong> — The latest patches added to the system with their risk levels.</li>
+  <li><strong>Activity Feed</strong> — Recent actions taken by your team members.</li>
+</ul>
+<p>Use the sidebar to navigate to detailed views for patches, assets, and rollout plans.</p>
+{% endblock %}
+
+{% block content %}
+{% if not agent_configured %}
+<div class="alert alert-warning">
+  <i class="fas fa-exclamation-triangle"></i>
+  <strong>AI Agent Not Configured</strong> — Set <code>KINDO_API_TOKEN</code> and <code>KINDO_AGENT_ID</code> environment variables to enable AI-powered patch analysis and rollout plan generation.
+  <a href="{{ url_for('main.settings') }}">View Settings</a>
+</div>
+{% endif %}
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon" style="background: var(--color-secondary-light);">
+      <i class="fas fa-download" style="color: var(--color-secondary);"></i>
+    </div>
+    <div class="stat-content">
+      <span class="stat-value">{{ patch_count|default(0) }}</span>
+      <span class="stat-label">Total Patches</span>
+    </div>
+  </div>
+  <div class="stat-card stat-critical">
+    <div class="stat-icon" style="background: #fde8e8;">
+      <i class="fas fa-exclamation-circle" style="color: var(--color-danger);"></i>
+    </div>
+    <div class="stat-content">
+      <span class="stat-value">{{ critical_patches|default(0) }}</span>
+      <span class="stat-label">Critical Patches</span>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background: #e8f4fd;">
+      <i class="fas fa-server" style="color: #2196F3;"></i>
+    </div>
+    <div class="stat-content">
+      <span class="stat-value">{{ asset_count|default(0) }}</span>
+      <span class="stat-label">Assets</span>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background: #e8fdf0;">
+      <i class="fas fa-list-check" style="color: var(--color-secondary);"></i>
+    </div>
+    <div class="stat-content">
+      <span class="stat-value">{{ plan_count|default(0) }}</span>
+      <span class="stat-label">Rollout Plans</span>
+    </div>
+  </div>
+</div>
+
+<div class="dashboard-grid">
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-clock"></i> Recent Patches</h3>
+      <a href="{{ url_for('patches.list_patches') }}" class="btn btn-sm btn-ghost">View All</a>
+    </div>
+    <div class="card-body">
+      {% if recent_patches %}
+      <table class="table">
+        <thead>
+          <tr><th>Title</th><th>Vendor</th><th>Risk</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% for p in recent_patches %}
+          <tr>
+            <td><a href="{{ url_for('patches.view_patch', patch_id=p.id) }}">{{ p.title|truncate(50) }}</a></td>
+            <td>{{ p.vendor or '—' }}</td>
+            <td><span class="badge badge-{{ p.risk_level or 'unknown' }}">{{ (p.risk_level or 'pending')|upper }}</span></td>
+            <td><span class="badge badge-outline">{{ p.status }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <i class="fas fa-download"></i>
+        <p>No patches yet. <a href="{{ url_for('patches.create_patch') }}">Add your first patch</a>.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-history"></i> Recent Activity</h3>
+      {% if current_user.has_role('admin') %}
+      <a href="{{ url_for('admin.audit') }}" class="btn btn-sm btn-ghost">View All</a>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      {% if recent_activity %}
+      <div class="activity-feed">
+        {% for log in recent_activity %}
+        <div class="activity-item">
+          <div class="activity-icon"><i class="fas fa-circle"></i></div>
+          <div class="activity-content">
+            <span class="activity-action">{{ log.action|replace('_', ' ')|title }}</span>
+            {% if log.detail %}<span class="activity-detail">{{ log.detail|truncate(80) }}</span>{% endif %}
+            <span class="activity-time">{{ log.created_at.strftime('%b %d, %H:%M') if log.created_at else '' }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <i class="fas fa-history"></i>
+        <p>No recent activity.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "layouts/base.html" %}
+{% block title %}Assets — Patch Prioritization{% endblock %}
+{% block page_title %}Assets{% endblock %}
+
+{% block help_content %}
+<h4>Asset Inventory</h4>
+<p>Manage your organization's assets that are subject to patching.</p>
+<ul>
+  <li><strong>Criticality</strong> — How important is this asset to business operations?</li>
+  <li><strong>Environment</strong> — Production, staging, dev, or test</li>
+  <li><strong>Exposure</strong> — External (internet-facing), DMZ, or internal only</li>
+</ul>
+<p>These attributes influence the priority score when patches are analyzed.</p>
+{% endblock %}
+
+{% block content %}
+<div class="page-actions">
+  <div class="filter-bar">
+    <form method="GET" class="filter-form">
+      <select name="criticality" class="form-control form-control-sm" onchange="this.form.submit()">
+        <option value="">All Criticalities</option>
+        {% for c in ['critical','high','medium','low'] %}
+        <option value="{{ c }}" {% if request.args.get('criticality') == c %}selected{% endif %}>{{ c|title }}</option>
+        {% endfor %}
+      </select>
+      <select name="environment" class="form-control form-control-sm" onchange="this.form.submit()">
+        <option value="">All Environments</option>
+        {% for e in ['production','staging','dev','test'] %}
+        <option value="{{ e }}" {% if request.args.get('environment') == e %}selected{% endif %}>{{ e|title }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+  {% if current_user.has_any_role('admin', 'analyst', 'operator') %}
+  <a href="{{ url_for('assets.create_asset') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Asset</a>
+  {% endif %}
+</div>
+
+{% if assets %}
+<div class="card">
+  <div class="card-body no-padding">
+    <table class="table">
+      <thead>
+        <tr><th>Name</th><th>Hostname</th><th>OS</th><th>Criticality</th><th>Environment</th><th>Exposure</th><th>Owner</th></tr>
+      </thead>
+      <tbody>
+        {% for a in assets %}
+        <tr>
+          <td><a href="{{ url_for('assets.view_asset', asset_id=a.id) }}">{{ a.name }}</a></td>
+          <td class="text-mono">{{ a.hostname or '—' }}</td>
+          <td>{{ a.os_type or '—' }} {{ a.os_version or '' }}</td>
+          <td><span class="badge badge-{{ a.criticality }}">{{ a.criticality|upper }}</span></td>
+          <td>{{ a.environment }}</td>
+          <td>{{ a.exposure }}</td>
+          <td>{{ a.owner or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="empty-state-page">
+  <i class="fas fa-server"></i>
+  <h3>No Assets Found</h3>
+  <p>Add assets to build your inventory for patch prioritization.</p>
+  {% if current_user.has_any_role('admin', 'analyst', 'operator') %}
+  <a href="{{ url_for('assets.create_asset') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Your First Asset</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends "layouts/base.html" %}
+{% block title %}Getting Started — Patch Prioritization{% endblock %}
+{% block page_title %}Getting Started{% endblock %}
+
+{% block help_content %}
+<h4>Getting Started Guide</h4>
+<p>This page walks you through the key steps to begin using the Patch Prioritization & Orchestration platform.</p>
+<p>Follow the numbered steps in order, or click the quick-navigation links at the top to jump to a specific section.</p>
+{% endblock %}
+
+{% block content %}
+<div class="getting-started">
+  <!-- Quick nav -->
+  <div class="quick-nav card">
+    <div class="card-body">
+      <strong><i class="fas fa-compass"></i> Quick Navigation:</strong>
+      <a href="#step-1">What Is This App?</a>
+      <a href="#step-2">Prerequisites</a>
+      <a href="#step-3">Add Assets</a>
+      <a href="#step-4">Import Patches</a>
+      <a href="#step-5">AI Analysis</a>
+      <a href="#step-6">Rollout Plans</a>
+      <a href="#step-7">Next Steps</a>
+    </div>
+  </div>
+
+  <!-- Step 1 -->
+  <div class="step-card" id="step-1">
+    <div class="step-badge">1</div>
+    <div class="step-content">
+      <h3>What Is This App?</h3>
+      <p>Patch Prioritization & Orchestration is a workflow platform that helps security and IT teams:</p>
+      <ul>
+        <li><strong>Rank patches</strong> by exploitability (EPSS), CVSS score, asset criticality, network exposure, and operational impact</li>
+        <li><strong>Analyze patches</strong> using AI-powered threat intelligence enrichment</li>
+        <li><strong>Generate rollout plans</strong> that minimize downtime while addressing the highest-risk patches first</li>
+        <li><strong>Track deployment</strong> with step-by-step execution tracking and approval workflows</li>
+      </ul>
+      <p>The platform supports multi-tenancy and role-based access control (RBAC), enabling multiple organizations and teams to work independently.</p>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step-card" id="step-2">
+    <div class="step-badge">2</div>
+    <div class="step-content">
+      <h3>Prerequisites</h3>
+      <p>Before you begin, make sure you have:</p>
+      <ul>
+        <li><strong>An account</strong> — You're logged in, so this is done!</li>
+        <li><strong>AI Agent configured</strong> — For AI-powered analysis, set the <code>KINDO_API_TOKEN</code> and <code>KINDO_AGENT_ID</code> environment variables.
+          {% if agent_configured %}
+          <span class="badge badge-low">Configured</span>
+          {% else %}
+          <span class="badge badge-critical">Not Configured</span> — <a href="{{ url_for('main.settings') }}">Go to Settings</a>
+          {% endif %}
+        </li>
+        <li><strong>Asset inventory</strong> — A list of servers, endpoints, and systems you need to patch</li>
+        <li><strong>Patch feed</strong> — CVE advisories, vendor bulletins, or patch metadata to import</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step-card" id="step-3">
+    <div class="step-badge">3</div>
+    <div class="step-content">
+      <h3>Add Your Assets</h3>
+      <p>Start by building your asset inventory. Each asset includes criticality, environment, and exposure metadata that drives prioritization scoring.</p>
+      <a href="{{ url_for('assets.create_asset') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add an Asset</a>
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step-card" id="step-4">
+    <div class="step-badge">4</div>
+    <div class="step-content">
+      <h3>Import Patches</h3>
+      <p>Add patches from your vulnerability scanners, vendor advisories, or manual entry. Include CVSS scores, EPSS scores, CVE IDs, and affected assets.</p>
+      <a href="{{ url_for('patches.create_patch') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add a Patch</a>
+    </div>
+  </div>
+
+  <!-- Step 5 -->
+  <div class="step-card" id="step-5">
+    <div class="step-badge">5</div>
+    <div class="step-content">
+      <h3>AI-Powered Analysis</h3>
+      <p>Once patches are added, use the <strong>Analyze</strong> button on any patch detail page to trigger AI-powered scoring. The Kindo agent evaluates:</p>
+      <ul>
+        <li>Exploitability and active threat intelligence</li>
+        <li>Asset criticality and business impact</li>
+        <li>Network exposure and attack surface</li>
+        <li>Operational impact of deployment</li>
+      </ul>
+      <p>Results include a priority score, risk level, detailed findings, and actionable recommendations.</p>
+    </div>
+  </div>
+
+  <!-- Step 6 -->
+  <div class="step-card" id="step-6">
+    <div class="step-badge">6</div>
+    <div class="step-content">
+      <h3>Generate Rollout Plans</h3>
+      <p>Create rollout plans to orchestrate patch deployment. Select patches and let the AI agent generate an optimized deployment schedule.</p>
+      <a href="{{ url_for('rollout.create_plan') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Create a Rollout Plan</a>
+    </div>
+  </div>
+
+  <!-- Step 7 -->
+  <div class="step-card" id="step-7">
+    <div class="step-badge">7</div>
+    <div class="step-content">
+      <h3>Next Steps</h3>
+      <ul>
+        <li><strong>Admin panel</strong> — Manage users, roles, and tenants under <a href="{{ url_for('admin.users') }}">Admin</a></li>
+        <li><strong>Audit log</strong> — Review all actions taken in the system</li>
+        <li><strong>Theme</strong> — Toggle between light and dark mode using the <i class="fas fa-moon"></i> button in the top bar</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
